@@ -18,41 +18,35 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
 
-    //variables
     private static final float DEFAULT_ZOOM = 14.0f;
-    AudioManager audioManager;
-    Button silencePhoneBtn;
-    EditText passwordEditText, loginEditText;
-    GoogleMap map;
-    TextView locationTextView;
-    Polygon universityPolygon;
-    boolean mLocationPermissionGranted;
-    LatLng universityLoc;
-    static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 100;
-
-
+    private AudioManager audioManager;
+    private Button silencePhoneBtn;
+    private EditText passwordEditText, loginEditText;
+    private GoogleMap mMap;
+    private TextView locationTextView;
+    private boolean mLocationPermissionGranted;
+    private MapHandler mapHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
+        //Setting all view variables (buttons and fields)
         silencePhoneBtn = findViewById(R.id.silencePhoneBtn);
         passwordEditText = findViewById(R.id.passwordEditText);
         loginEditText = findViewById(R.id.loginEditText);
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         locationTextView = findViewById(R.id.locationTextView);
 
+        //Object to handle all mMap related actions - mainly used in "onMapReady" method
+        mapHandler = new MapHandler();
 
-
-        //ask for phone silencing permissions if not granted
+        //ask for phone silencing permissions and gps access permissions if not granted
         askForPermissionsIfNeeded();
 
         //button functionality
@@ -61,8 +55,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
 
         mapFragment.getMapAsync(this);
-
-
     }
 
     //TODO:asking for gps not implemented
@@ -72,6 +64,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             Intent intent = new Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
             startActivity(intent);
         }
+
         if (!mLocationPermissionGranted){
             ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
@@ -85,11 +78,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    public boolean isOnUniversity() {
-       // PolyUtil.containsLocation(userLocation, universityPolygon, false);
-        return false;
-    }
-
     public boolean isHavingClasses() {
         //TODO: implement functionality using JSOS api
         return false;
@@ -97,19 +85,16 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        map = googleMap;
-        universityLoc = new LatLng(51.108980, 17.061714);
-        universityPolygon = map.addPolygon(new PolygonOptions()
-                .clickable(true)
-                .add(new LatLng(51.108955, 17.053984),
-                        new LatLng(51.107353, 17.056216),
-                        new LatLng(51.107086, 17.063868),
-                        new LatLng(51.108671, 17.068253),
-                        new LatLng(51.112091, 17.060255)));
-        // Store a data object with the polygon, used here to indicate an arbitrary type.
-        universityPolygon.setTag("alpha");
+        mMap = googleMap;
+        mapHandler.setAllMapProperties();
+        //Adding university polygon to the mMap
+        mMap.addPolygon(new PolygonOptions().clickable(true).addAll(mapHandler.getUniversityLatLngList()));
+
+        //Camera set up - zooming
         float zoomLevel = DEFAULT_ZOOM; //This goes up to 21
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(universityLoc, zoomLevel));
-        locationTextView.setText(universityLoc.toString());
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mapHandler.getUniversityLoc(), zoomLevel));
+
+        //Text to see point location
+        locationTextView.setText(mapHandler.getUniversityLoc().toString());
     }
 }
