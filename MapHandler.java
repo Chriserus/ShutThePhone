@@ -1,7 +1,7 @@
 package com.student.krborowi.shutthephone;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.google.maps.android.PolyUtil;
+//import com.google.maps.android.PolyUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,9 +19,9 @@ public class MapHandler {
         return universityLoc;
     }
 
-    public boolean isOnUniversity(LatLng userLocation) {
-        return PolyUtil.containsLocation(userLocation, universityLatLngList, false);
-    }
+//    public boolean isOnUniversity(LatLng userLocation) {
+//        return PolyUtil.containsLocation(userLocation, universityLatLngList, false);
+//    }
 
     public void setAllMapProperties(){
         universityLoc = new LatLng(51.108980, 17.061714);
