@@ -25,6 +25,7 @@ public class MapHandler {
 
     public void setAllMapProperties(){
         universityLoc = new LatLng(51.108980, 17.061714);
+
         //adding all LatLng points to list
         universityLatLngList = new ArrayList<>();
         universityLatLngList.add(new LatLng(51.108955, 17.053984));
