@@ -26,6 +26,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -38,27 +39,34 @@ public class MainActivity extends AppCompatActivity {
     private Button silencePhoneBtn;
     private TextView locationTextView;
     private FusedLocationProviderClient client;
-    LocationRequest mLocationRequest;
-    LocationCallback mLocationCallback;
+    private LocationRequest mLocationRequest;
+    private LocationCallback mLocationCallback;
+    private MapHandler mapHandler;
+    private boolean isUserOnUniversity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //Initialize application interface
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        requestPermission();
-
+        mapHandler = new MapHandler();
+        mapHandler.setAllMapProperties();
         client = LocationServices.getFusedLocationProviderClient(this);
-
+        //ask for phone silencing permissions and gps access permissions if not granted
+        askForPermissionsIfNeeded();
         createLocationRequest();
+        //Getting location updates
         mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null)
                     return;
                 for (Location location : locationResult.getLocations()) {
-                    locationTextView.setText(location.getLatitude() + " " + location.getLongitude());
+                    isUserOnUniversity = mapHandler.isOnUniversity(new LatLng(location.getLatitude(), location.getLongitude()));
+                    if(isUserOnUniversity)
+                        locationTextView.setText("Success!");
+                    else
+                        locationTextView.setText("Not on university!");
                 }
             }
         };
@@ -70,9 +78,6 @@ public class MainActivity extends AppCompatActivity {
 
         //button functionality
         silencePhoneBtn.setOnClickListener((View v) -> runPhoneSilencerService());
-
-        //ask for phone silencing permissions and gps access permissions if not granted
-        askForPermissionsIfNeeded();
 
     }
 
@@ -91,22 +96,6 @@ public class MainActivity extends AppCompatActivity {
         } else if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
             audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
         }
-
-        if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        client.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                if (location != null) {
-                    locationTextView.setText(location.getLatitude() + " " + location.getLongitude());
-                }
-            }
-        });
-    }
-
-    private void requestPermission() {
-        ActivityCompat.requestPermissions(this, new String[]{ACCESS_FINE_LOCATION}, 1);
     }
 
     protected void createLocationRequest() {
@@ -123,9 +112,6 @@ public class MainActivity extends AppCompatActivity {
         task.addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
             @Override
             public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
-                // All location settings are satisfied. The client can initialize
-                // location requests here.
-                // ...
             }
         });
 
@@ -133,11 +119,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Exception e) {
                 if (e instanceof ResolvableApiException) {
-                    // Location settings are not satisfied, but this can be fixed
-                    // by showing the user a dialog.
                     try {
-                        // Show the dialog by calling startResolutionForResult(),
-                        // and check the result in onActivityResult().
                         ResolvableApiException resolvable = (ResolvableApiException) e;
                         resolvable.startResolutionForResult(MainActivity.this,
                                 1);
@@ -149,31 +131,18 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public boolean isHavingClasses() {
-        //TODO: implement functionality using JSOS api (or google calendar api/icalendar api)
-        return false;
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        client.requestLocationUpdates(mLocationRequest,
-                mLocationCallback,
-                null /* Looper */);
-
+        client.requestLocationUpdates(mLocationRequest, mLocationCallback,null);
     }
 
-    private void startLocationUpdates() {
-
+    //Main method checking both needed booleans
+    //TODO: implement this method
+    public boolean isOnUniversityAndDuringLectures(boolean isUserOnUniversity, boolean isDuringClasses){
+        return true;
     }
 }
