@@ -13,9 +13,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
 
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -36,13 +33,10 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 public class MainActivity extends AppCompatActivity {
 
     private AudioManager audioManager;
-    private Button silencePhoneBtn;
-    private TextView locationTextView;
     private FusedLocationProviderClient client;
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
     private MapHandler mapHandler;
-    private boolean isUserOnUniversity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         //ask for phone silencing permissions and gps access permissions if not granted
         askForPermissionsIfNeeded();
         createLocationRequest();
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         //Getting location updates
         mLocationCallback = new LocationCallback() {
             @Override
@@ -62,23 +57,10 @@ public class MainActivity extends AppCompatActivity {
                 if (locationResult == null)
                     return;
                 for (Location location : locationResult.getLocations()) {
-                    isUserOnUniversity = mapHandler.isOnUniversity(new LatLng(location.getLatitude(), location.getLongitude()));
-                    if(isUserOnUniversity)
-                        locationTextView.setText("Success!");
-                    else
-                        locationTextView.setText("Not on university!");
+                    runPhoneSilencerService(mapHandler.isOnUniversity(new LatLng(location.getLatitude(), location.getLongitude())));
                 }
             }
         };
-
-        //Setting all view variables (buttons and fields)
-        silencePhoneBtn = findViewById(R.id.silencePhoneBtn);
-        locationTextView = findViewById(R.id.locationTextView);
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-
-        //button functionality
-        silencePhoneBtn.setOnClickListener((View v) -> runPhoneSilencerService());
-
     }
 
     private void askForPermissionsIfNeeded() {
@@ -90,11 +72,11 @@ public class MainActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(this, new String[]{ACCESS_FINE_LOCATION}, 1);
     }
 
-    private void runPhoneSilencerService() {
-        if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
-            audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
-        } else if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+    private void runPhoneSilencerService(boolean enable) {
+        if (enable) {
             audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+        } else {
+            audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
         }
     }
 
@@ -134,15 +116,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        client.requestLocationUpdates(mLocationRequest, mLocationCallback,null);
+        client.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
     }
 
     //Main method checking both needed booleans
     //TODO: implement this method
-    public boolean isOnUniversityAndDuringLectures(boolean isUserOnUniversity, boolean isDuringClasses){
+    public boolean isOnUniversityAndDuringLectures(boolean isUserOnUniversity, boolean isDuringClasses) {
         return true;
     }
 }
